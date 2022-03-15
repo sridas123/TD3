@@ -11,7 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim, min_action, max_action):
+    def __init__(self, state_dim, action_dim, max_action):
         super(Actor, self).__init__()
         
         self.l1 = nn.Linear(state_dim, 128)
@@ -25,9 +25,8 @@ class Actor(nn.Module):
         # self.l4=nn.BatchNorm1d(256)
         # self.l5 = nn.Linear(256, action_dim)
 
-        self.min_action = torch.FloatTensor(min_action)
-        self.max_action = torch.FloatTensor(max_action)
-        print(f"min_action,max_action is,{self.min_action},{self.max_action}")
+        #self.min_action = torch.FloatTensor(min_action)
+        self.max_action = max_action
 
     def forward(self, state):
         
@@ -106,7 +105,6 @@ class TD3(object):
         self,
         state_dim,
         action_dim,
-        min_action,
         max_action,
         discount=0.99,
         tau=0.01,
@@ -115,7 +113,7 @@ class TD3(object):
         policy_freq=2,
     ):
 
-        self.actor = Actor(state_dim, action_dim, min_action, max_action).to(device)
+        self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
         self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
@@ -123,8 +121,8 @@ class TD3(object):
         self.critic_target = copy.deepcopy(self.critic)
         self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
-        self.min_action = torch.FloatTensor(min_action)
-        self.max_action = torch.FloatTensor(max_action)
+        #self.min_action = torch.FloatTensor(min_action)
+        self.max_action = max_action
         self.discount = discount
         self.tau = tau
         self.policy_noise = policy_noise
@@ -147,9 +145,9 @@ class TD3(object):
         #self.actor.train()
         #return action
         action = self.actor(state).cpu().data.numpy().flatten()
-        print("Predict: ", state, " ->  ",action)
+        #print("Predict: ", state, " ->  ",action)
         target_action = self.actor_target(state).cpu().data.numpy().flatten()
-        print("Target : ", state, " ->  ",target_action)
+        #print("Target : ", state, " ->  ",target_action)
         return action
 
     def train(self, replay_buffer, batch_size=64):
@@ -179,7 +177,7 @@ class TD3(object):
             next_target_Q = self.critic_target(next_state, next_action)
         target_Q = reward + not_done * self.discount * next_target_Q
 
-        print("Fut: ",next_state[0], " ->  ",next_action[0], "  ==  ", next_target_Q[0])
+        #print("Fut: ",next_state[0], " ->  ",next_action[0], "  ==  ", next_target_Q[0])
 
         # Get current Q estimates
         current_Q1 = self.critic(state, action)
@@ -188,7 +186,7 @@ class TD3(object):
 
         # Compute critic loss
         critic_loss = F.mse_loss(current_Q1, target_Q)
-        print("critic_loss: ", critic_loss)
+        #print("critic_loss: ", critic_loss)
         #self.critic_loss.append(critic_loss.detach().numpy())
 
         # Optimize the critic
@@ -212,7 +210,7 @@ class TD3(object):
         actor_loss.backward()
         self.actor_optimizer.step()
         
-        print("actor_loss: ", actor_loss)
+        #print("actor_loss: ", actor_loss)
 
         # Update the frozen target models
         for param, target_param in zip(

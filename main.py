@@ -57,8 +57,8 @@ if __name__ == "__main__":
 	print("---------------------------------------")
 	print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
 	print("---------------------------------------")
-
-	if not os.path.exists("../..results"):
+    
+	if not os.path.exists("../../results"):
 		os.makedirs("../../results")
 
 	if args.save_model and not os.path.exists("../../models"):
@@ -149,5 +149,5 @@ if __name__ == "__main__":
 		# Evaluate episode
 		if (t + 1) % args.eval_freq == 0:
 			evaluations.append(eval_policy(policy, args.env, args.seed))
-			np.save(f"./results/{file_name}", evaluations)
+			np.save(f"../../results/{file_name}", evaluations)
 			if args.save_model: policy.save(f"../../models/{file_name}")
