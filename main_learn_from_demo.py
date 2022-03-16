@@ -61,7 +61,7 @@ if __name__ == "__main__":
     demo_filename="llandar_demo.npy"
     print ("The flag to load demonstration is",args.load_demo)
 
-    file_name = f"{args.policy}_{args.env}_{args.seed}_'demo'"
+    file_name = f"{args.policy}_{args.env}_{args.seed}_{'demo'}"
     print ("The demo filename is",demo_filename)
     print("---------------------------------------")
     print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
