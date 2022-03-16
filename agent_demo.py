@@ -130,10 +130,6 @@ class TD3(object):
         self.policy_freq = policy_freq
 
         self.total_it = 0
-        
-        #list containing actor and critic loss functions:
-        #self.actor_loss=[]
-        #self.critic_loss=[]
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -150,11 +146,14 @@ class TD3(object):
         #print("Target : ", state, " ->  ",target_action)
         return action
 
-    def train(self, replay_buffer, batch_size=64):
+    def train(self, replay_buffer,replay_buffer_demo, pretrain=False,batch_size=64):
         self.total_it += 1
 
         # Sample replay buffer
-        state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+        if pretrain==True:
+           state, action, next_state, reward, not_done = replay_buffer_demo.sample(batch_size) 
+        else:   
+           state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
         next_action = self.actor_target(next_state)
         
         
@@ -244,5 +243,9 @@ class TD3(object):
         self.actor.load_state_dict(torch.load(filename + "_actor"))
         self.actor_optimizer.load_state_dict(torch.load(filename + "_actor_optimizer"))
         self.actor_target = copy.deepcopy(self.actor)
+        
+    def load_demonstration(self, filename):
+        print (filename)
+        self.demo=np.load(filename,allow_pickle=True)    
         
         
