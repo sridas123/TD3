@@ -61,7 +61,7 @@ if __name__ == "__main__":
     demo_filename="llandar_demo.npy"
     print ("The flag to load demonstration is",args.load_demo)
 
-    file_name = f"{args.policy}_{args.env}_{args.seed}_{'demo_bc_pretrain'}"
+    file_name = f"{args.policy}_{args.env}_{args.seed}_{'demo_bc_pretrain_reg'}"
     print ("The demo filename is",demo_filename)
     print("---------------------------------------")
     print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
@@ -137,9 +137,10 @@ if __name__ == "__main__":
     #input()
               
     #Pretrain the network from demo transitions
-    for i in range(int(args.pretrain_timesteps)):    
-        print ("Pretrain step",i)
-        policy.train(replay_buffer, replay_buffer_demo,True,args.batch_size)
+    if args.pretrain:
+       for i in range(int(args.pretrain_timesteps)):    
+           print ("Pretrain step",i)
+           policy.train(replay_buffer, replay_buffer_demo,True,args.batch_size)
         
     #Set the pre-training flag to False
     args.pretrain=False
@@ -156,14 +157,14 @@ if __name__ == "__main__":
         
         episode_timesteps += 1
 
-        # Select action randomly or according to policy
-        #if t < args.start_timesteps:
-        #    action = env.action_space.sample()
-        #else:
-        action = (
+        #Select action randomly or according to policy
+        if t < args.start_timesteps:
+            action = env.action_space.sample()
+        else:
+           action = (
                 policy.select_action(np.array(state))
                 + np.random.normal(0, max_action * args.expl_noise, size=action_dim)
-            ).clip(-max_action, max_action)
+             ).clip(-max_action, max_action)
 
         # Perform action
         next_state, reward, done, _ = env.step(action) 

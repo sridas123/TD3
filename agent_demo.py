@@ -115,11 +115,11 @@ class TD3(object):
 
         self.actor = Actor(state_dim, action_dim, max_action).to(device)
         self.actor_target = copy.deepcopy(self.actor)
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4,weight_decay=1e-4)
 
         self.critic = Critic(state_dim, action_dim).to(device)
         self.critic_target = copy.deepcopy(self.critic)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4,weight_decay=1e-4)
 
         #self.min_action = torch.FloatTensor(min_action)
         self.max_action = max_action
@@ -214,16 +214,16 @@ class TD3(object):
         # if self.total_it % self.policy_freq == 0:
         # Compute actor loss
         if pretrain==True:
-           actor_loss = -self.critic(state, self.actor(state)).mean()
+           actor_loss = -self.critic(state, self.actor(state)).mean() 
         else:
            #print ("Training the behavior cloning loss") 
-           actor_loss = -self.critic(state, self.actor(state)).mean() + bc_loss
+           actor_loss = -self.critic(state, self.actor(state)).mean() + bc_loss 
+           print ("Fitting the behavior cloning loss")
         #Append the actor and the critic loss
         #self.actor_loss.append(actor_loss.detach().numpy())
         #self.critic_loss.append(critic_loss.detach().numpy())
         
         # Optimize the actor
-        self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
         
