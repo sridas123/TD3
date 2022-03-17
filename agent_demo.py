@@ -130,6 +130,8 @@ class TD3(object):
         self.policy_freq = policy_freq
 
         self.total_it = 0
+        self.agent_percent=0.75
+        self.demo_percent=0.25
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -153,9 +155,24 @@ class TD3(object):
         if pretrain==True:
            state, action, next_state, reward, not_done = replay_buffer_demo.sample(batch_size) 
         else:   
-           state, action, next_state, reward, not_done = replay_buffer.sample(batch_size)
+           agent_batch_size= (int)(self.agent_percent*batch_size)
+           demo_batch_size=(int)(self.demo_percent*batch_size)
+           state, action, next_state, reward, not_done = replay_buffer.sample(agent_batch_size)
+           state_d, action_d, next_state_d, reward_d, not_done_d = replay_buffer_demo.sample(demo_batch_size)
+           #Concatenate the agent and human demonstrations; needs to be activated when Q-filter is not required
+           state=torch.cat((state,state_d),0)
+           action=torch.cat((action,action_d),0)
+           next_state=torch.cat((next_state,next_state_d),0)
+           reward=torch.cat((reward,reward_d),0)
+           not_done=torch.cat((not_done,not_done_d),0)
+           #print ("The dimensions of the state are",state.size(),reward.size(),next_state.size())
+           
         next_action = self.actor_target(next_state)
         
+        #Calculate the behavior cloning (BC) loss from the demonstrations
+        if pretrain==False:
+           target_action_d=self.actor_target(state_d)
+           bc_loss=F.mse_loss(action_d, target_action_d)
         
         with torch.no_grad():
             # Select action according to policy and add clipped noise
@@ -193,13 +210,14 @@ class TD3(object):
         critic_loss.backward()
         torch.nn.utils.clip_grad_norm(self.critic.parameters(), 1)
         self.critic_optimizer.step()
-
         # Delayed policy updates
         # if self.total_it % self.policy_freq == 0:
-
         # Compute actor loss
-        actor_loss = -self.critic(state, self.actor(state)).mean()
-        
+        if pretrain==True:
+           actor_loss = -self.critic(state, self.actor(state)).mean()
+        else:
+           #print ("Training the behavior cloning loss") 
+           actor_loss = -self.critic(state, self.actor(state)).mean() + bc_loss
         #Append the actor and the critic loss
         #self.actor_loss.append(actor_loss.detach().numpy())
         #self.critic_loss.append(critic_loss.detach().numpy())

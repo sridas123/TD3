@@ -53,7 +53,7 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="")                 # Model load file name, "" doesn't load, "default" uses file_name
     parser.add_argument("--load_demo", action="store_true") 
     parser.add_argument("--pretrain", action="store_true")
-    parser.add_argument("--pretrain_timesteps", default=2e3, type=int) 
+    parser.add_argument("--pretrain_timesteps", default=500, type=int) 
     args = parser.parse_args()
 
     #Initialize the demonstration filename and diretory
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     demo_filename="llandar_demo.npy"
     print ("The flag to load demonstration is",args.load_demo)
 
-    file_name = f"{args.policy}_{args.env}_{args.seed}_{'demo'}"
+    file_name = f"{args.policy}_{args.env}_{args.seed}_{'demo_bc_pretrain'}"
     print ("The demo filename is",demo_filename)
     print("---------------------------------------")
     print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
@@ -117,28 +117,32 @@ if __name__ == "__main__":
        print (demo_dir+demo_filename) 
        policy.load_demonstration(demo_dir+demo_filename)
     
+    total_demo_reward=[]
     #Load the dmeonstration data into replay buffer
     if (args.load_demo==True): 
        print ("I am loading the demonstrations into replay buffer",policy.demo.shape[0]) 
        for i in range(policy.demo.shape[0]):
+          ep_reward=0 
           for j in range(len(policy.demo[i])):
               obs=policy.demo[i][j][0]
               actions=policy.demo[i][j][1]
               next_obs=policy.demo[i][j][2]
               reward=policy.demo[i][j][3]
               done=policy.demo[i][j][4]
-              #print("obs",obs)
-              #print("actions",actions)
-              #print("next_obs",next_obs)
-              #print("reward",reward)
-              #print("done",done)
-              #input()
+              ep_reward=ep_reward+reward   
               replay_buffer_demo.add(obs, actions, next_obs, reward , done) 
+          total_demo_reward.append(ep_reward)    
+          print ("ep_reward",ep_reward)
+    print ("The total average reward of demonstrations are",np.mean(np.asarray(total_demo_reward)))
+    #input()
               
     #Pretrain the network from demo transitions
     for i in range(int(args.pretrain_timesteps)):    
         print ("Pretrain step",i)
         policy.train(replay_buffer, replay_buffer_demo,True,args.batch_size)
+        
+    #Set the pre-training flag to False
+    args.pretrain=False
     
     # Evaluate untrained policy
     evaluations = [eval_policy(policy, args.env, args.seed)]
