@@ -173,6 +173,9 @@ class TD3(object):
         if pretrain==False:
            target_action_d=self.actor_target(state_d)
            bc_loss=F.mse_loss(action_d, target_action_d)
+        else:
+           target_action=self.actor_target(state) 
+           bc_loss=F.mse_loss(action, target_action)
         
         with torch.no_grad():
             # Select action according to policy and add clipped noise
@@ -213,12 +216,8 @@ class TD3(object):
         # Delayed policy updates
         # if self.total_it % self.policy_freq == 0:
         # Compute actor loss
-        if pretrain==True:
-           actor_loss = -self.critic(state, self.actor(state)).mean() 
-        else:
-           #print ("Training the behavior cloning loss") 
-           actor_loss = -self.critic(state, self.actor(state)).mean() + bc_loss 
-           print ("Fitting the behavior cloning loss")
+        
+        actor_loss = -self.critic(state, self.actor(state)).mean() + bc_loss
         #Append the actor and the critic loss
         #self.actor_loss.append(actor_loss.detach().numpy())
         #self.critic_loss.append(critic_loss.detach().numpy())
